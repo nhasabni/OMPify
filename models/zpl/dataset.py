@@ -13,19 +13,19 @@ from transformers import AutoTokenizer
 logger = logging.getLogger(__name__)
 
 # def load_sample(sample_path):
-# 		omp_pragma = None
-# 		#with open(os.path.join(sample_path, 'ast.pickle'), 'rb') as f:
-# 		#    asts = pickle.load(f)
-# 		with open(os.path.join(sample_path, f"code.{'cpp' if 'cpp_loops' in sample_path else 'c'}"), 'r') as f:
-# 			code = f.read()
-# 		try:
-# 			with open(os.path.join(sample_path, 'pragma.pickle'), 'rb') as f:
-# 				omp_pragma = pickle.load(f)
-# 		except FileNotFoundError:
-# 			pass
-# 		return omp_pragma, code
-		#return omp_pragma, asts.ast_loop, code
-		
+#     omp_pragma = None
+#     #with open(os.path.join(sample_path, 'ast.pickle'), 'rb') as f:
+#     #    asts = pickle.load(f)
+#     with open(os.path.join(sample_path, f"code.{'cpp' if 'cpp_loops' in sample_path else 'c'}"), 'r') as f:
+#       code = f.read()
+#     try:
+#       with open(os.path.join(sample_path, 'pragma.pickle'), 'rb') as f:
+#         omp_pragma = pickle.load(f)
+#     except FileNotFoundError:
+#       pass
+#     return omp_pragma, code
+    #return omp_pragma, asts.ast_loop, code
+    
 # def create_sample(sample_path, update_ratio=0):
 #     '''
 #         given path to sample folder and the ratio of the variable names that will be replaced
@@ -44,32 +44,33 @@ logger = logging.getLogger(__name__)
 #     return code, 0 if omp_pragma is None else 1
 
 def create_dataset(data_path, use_positive_examples_only=False, update_ratio=0):
-		def get_single_record(line):
-			json_line = json.loads(line.strip())
-			#path=json.loads(line.strip())['path']
-			#omp_pragma, code = load_sample(path)
-			code = json_line['code']
-			# so far, we only use code directly. We don't use AST.
-			# We also filter out negative examples.
-			omp_pragma_exists = json_line['exist']
-			return (code, omp_pragma_exists)
+    def get_single_record(line):
+      json_line = json.loads(line.strip())
+      #path=json.loads(line.strip())['path']
+      #omp_pragma, code = load_sample(path)
+      code = json_line['code']
+      # so far, we only use code directly. We don't use AST.
+      # We also filter out negative examples.
+      omp_pragma_exists = json_line['exist']
+      return (code, omp_pragma_exists)
 
-		with open(data_path, 'r') as f:
-			lines=f.readlines()
-		# If it is a training dataset, remove negative examples.
-		# If it is a test dataset, preserve both positive and negative examples.
-		dataset = pqdm(lines, get_single_record, n_jobs=4)
-		if (use_positive_examples_only):
-			dataset = [(code, omp_pragma_exists) for (code, omp_pragma_exists)
-	      				  in dataset
-									if omp_pragma_exists != 0]
-		return dataset
+    with open(data_path, 'r') as f:
+      lines=f.readlines()
+    # If it is a training dataset, remove negative examples.
+    # If it is a test dataset, preserve both positive and negative examples.
+    dataset = pqdm(lines, get_single_record, n_jobs=4)
+    if (use_positive_examples_only):
+      dataset = [(code, omp_pragma_exists) for (code, omp_pragma_exists)
+                  in dataset
+                  if omp_pragma_exists != 0]
+    return dataset
 
-def get_torch_dataloader(dataset_name, use_positive_examples_only=False, tokenizer_max_len=256, batch_size=32, shuffle=False):
+def get_torch_dataloader(dataset_dir, dataset_name, use_positive_examples_only=False,
+                         tokenizer_max_len=256, batch_size=32, shuffle=False):
   print('-' * 100)
   print('Loading dataset', dataset_name)
 
-  dataset_path = os.path.join('/nfs_home/nhasabni/other/openmp_transformer/ompify/models/dataset/json_c_cpp', f'{dataset_name}.jsonl')
+  dataset_path = os.path.join(dataset_dir, f'{dataset_name}.jsonl')
   dataset = create_dataset(dataset_path, use_positive_examples_only)
   print(f'The size of {dataset_name} set: {len(dataset)}')
 

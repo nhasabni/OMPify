@@ -34,8 +34,8 @@ def predict(model, test_name, test_loader, threshold):
         else:
           false_negative += 1
         #print(avg_squared_errors[i], omp_pragma_exists[i],
-        #			"TP:", true_positive, "TN:", true_negative,
-        #			"FP:", false_positive, "FN:", false_negative)
+        #      "TP:", true_positive, "TN:", true_negative,
+        #      "FP:", false_positive, "FN:", false_negative)
 
     accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
     recall = true_positive / (true_positive + false_negative)

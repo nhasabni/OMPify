@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 # --------------------------------------------------
 # config params
 # --------------------------------------------------
+dataset_dir='/nfs_home/nhasabni/other/openmp_transformer/datasets/c_cpp_jsonl'
 epochs = 10
 batch_size = 128
 # adam optimizer params
@@ -30,57 +31,57 @@ weight_decay = 1e-8
 # datasets
 # --------------------------------------------------
 
-train_loader = get_torch_dataloader('train', use_positive_examples_only=True,
-				    												 tokenizer_max_len=256, batch_size=batch_size,
-																		 shuffle=True)
-valid_loader = get_torch_dataloader('valid', use_positive_examples_only=False,
-				    												 tokenizer_max_len=256, batch_size=batch_size,
-																		 shuffle=False)
-test_loader = get_torch_dataloader('test', use_positive_examples_only=False,
-				    												tokenizer_max_len=256, batch_size=batch_size,
-																		shuffle=False)
+train_loader = get_torch_dataloader(dataset_dir, 'train', use_positive_examples_only=True,
+                                    tokenizer_max_len=256, batch_size=batch_size,
+                                    shuffle=True)
+valid_loader = get_torch_dataloader(dataset_dir, 'valid', use_positive_examples_only=False,
+                                    tokenizer_max_len=256, batch_size=batch_size,
+                                    shuffle=False)
+test_loader = get_torch_dataloader(dataset_dir, 'test', use_positive_examples_only=False,
+                                   tokenizer_max_len=256, batch_size=batch_size,
+                                   shuffle=False)
 
 class OMPAutoEncoder(torch.nn.Module):
-	def __init__(self):
-		super().__init__()
-		
-		# Building an linear encoder with Linear
-		# layer followed by Relu activation function
-		# 256 ==> 9
-		self.encoder = torch.nn.Sequential(
-			torch.nn.Linear(256, 128),
-			torch.nn.ReLU(),
-			torch.nn.Linear(128, 64),
-			torch.nn.ReLU(),
-			torch.nn.Linear(64, 36),
-			torch.nn.ReLU(),
-			torch.nn.Linear(36, 18),
-			torch.nn.ReLU(),
-			torch.nn.Linear(18, 9)
-		)
-		
-		# Building an linear decoder with Linear
-		# layer followed by Relu activation function
-		# The Sigmoid activation function
-		# outputs the value between 0 and 1
-		# 9 ==> 256
-		self.decoder = torch.nn.Sequential(
-			torch.nn.Linear(9, 18),
-			torch.nn.ReLU(),
-			torch.nn.Linear(18, 36),
-			torch.nn.ReLU(),
-			torch.nn.Linear(36, 64),
-			torch.nn.ReLU(),
-			torch.nn.Linear(64, 128),
-			torch.nn.ReLU(),
-			torch.nn.Linear(128, 256),
-			torch.nn.Sigmoid()
-		)
+  def __init__(self):
+    super().__init__()
 
-	def forward(self, x):
-		encoded = self.encoder(x)
-		decoded = self.decoder(encoded)
-		return decoded
+    # Building an linear encoder with Linear
+    # layer followed by Relu activation function
+    # 256 ==> 9
+    self.encoder = torch.nn.Sequential(
+      torch.nn.Linear(256, 128),
+      torch.nn.ReLU(),
+      torch.nn.Linear(128, 64),
+      torch.nn.ReLU(),
+      torch.nn.Linear(64, 36),
+      torch.nn.ReLU(),
+      torch.nn.Linear(36, 18),
+      torch.nn.ReLU(),
+      torch.nn.Linear(18, 9)
+    )
+
+    # Building an linear decoder with Linear
+    # layer followed by Relu activation function
+    # The Sigmoid activation function
+    # outputs the value between 0 and 1
+    # 9 ==> 256
+    self.decoder = torch.nn.Sequential(
+      torch.nn.Linear(9, 18),
+      torch.nn.ReLU(),
+      torch.nn.Linear(18, 36),
+      torch.nn.ReLU(),
+      torch.nn.Linear(36, 64),
+      torch.nn.ReLU(),
+      torch.nn.Linear(64, 128),
+      torch.nn.ReLU(),
+      torch.nn.Linear(128, 256),
+      torch.nn.Sigmoid()
+    )
+
+  def forward(self, x):
+    encoded = self.encoder(x)
+    decoded = self.decoder(encoded)
+    return decoded
 
 # Model Initialization
 model = OMPAutoEncoder()
@@ -90,8 +91,8 @@ loss_function = torch.nn.MSELoss()
 
 # Using an Adam Optimizer with lr = 0.1
 optimizer = torch.optim.Adam(model.parameters(),
-															lr = lr,
-															weight_decay = weight_decay)
+                              lr = lr,
+                              weight_decay = weight_decay)
 
 print('*' * 100)
 print("Performing training")
@@ -114,7 +115,7 @@ for epoch in range(epochs):
     loss.backward()
     optimizer.step()
     
-	# Storing the losses in a list for plotting
+  # Storing the losses in a list for plotting
   print("loss:", loss)
   losses.append(loss)
   outputs.append((epochs, train_code, reconstructed))
@@ -128,18 +129,18 @@ threshold = losses[-1]
 print("Threshold:", threshold)
   
 # Predict on training set itself first
-train_loader_with_neg_eg_also = get_torch_dataloader('train', use_positive_examples_only=False,
-						     																			tokenizer_max_len=256, batch_size=32,
-																											shuffle=False)
+train_loader_with_neg_eg_also = get_torch_dataloader(dataset_dir, 'train', use_positive_examples_only=False,
+                                                     tokenizer_max_len=256, batch_size=32,
+                                                     shuffle=False)
 predict(model, 'train_with_all_eg', train_loader_with_neg_eg_also, threshold)
 
 # Predict on validation set first
 predict(model, 'validation', valid_loader, threshold)
-	
+  
 # Then test on test set.
 predict(model, 'test', test_loader, threshold)
-	
+  
 
 
-		
+    
   
